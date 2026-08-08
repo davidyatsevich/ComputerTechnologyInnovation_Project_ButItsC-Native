@@ -13,6 +13,14 @@ For running the app from a pre-built `.dmg`. If you're building from source inst
 
    If double-clicking gives a blocked/damaged-looking dialog with no Open option, go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the message about this app.
 
+   Alternatively, from Terminal:
+
+   ```bash
+   xattr -d com.apple.quarantine /Applications/EmailClusteringFrontend.app
+   ```
+
+   This removes the flag Gatekeeper uses to trigger that warning. Safe to run on an app you built or downloaded yourself and trust.
+
 ### Uninstalling
 
 Drag `EmailClusteringFrontend.app` from Applications to the Trash. No other files are installed elsewhere on the system.
