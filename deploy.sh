@@ -15,6 +15,10 @@
 # references using the whole process's inherited rpath stack, not just its
 # own.
 #
+# Builds universal (Intel + Apple Silicon) binaries by default - see
+# CMakeLists.txt for the architecture and deployment-target settings this
+# relies on.
+#
 # Usage:
 #   ./deploy.sh                        # uses Frontend/assets/icon.png
 #   ./deploy.sh path/to/other_icon.png # use a different source image
@@ -106,7 +110,7 @@ fi
 
 echo "    Qt root: $QT_ROOT"
 
-# --- 3. Configure and build (Release, host architecture, pinned Qt) --------
+# --- 3. Configure and build (Release, universal, pinned Qt) ----------------
 echo "==> Configuring and building (Release)..."
 
 rm -rf "$BUILD_DIR"
@@ -122,6 +126,29 @@ if [[ ! -d "$APP" ]]; then
 fi
 
 echo "    Built: $APP"
+
+# Sanity-check the binary actually contains every architecture that was
+# requested. A mismatched-architecture linker warning (as opposed to a hard
+# error) can let a build "succeed" while silently dropping a dependency from
+# one slice, producing a binary that crashes on launch on that architecture
+# only. This bit us before with a single-arch Homebrew OpenCV; it shouldn't
+# happen now that OpenCV isn't a dependency, but it's cheap insurance against
+# it happening again with some future dependency.
+REQUESTED_ARCHES="$(grep -m1 '^CMAKE_OSX_ARCHITECTURES:' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null | cut -d= -f2 | tr ';' ' ')"
+if [[ -n "$REQUESTED_ARCHES" ]]; then
+    ACTUAL_ARCHES="$(lipo -archs "$BINARY" 2>/dev/null || true)"
+    for arch in $REQUESTED_ARCHES; do
+        if [[ "$ACTUAL_ARCHES" != *"$arch"* ]]; then
+            echo "" >&2
+            echo "==> Warning: requested architecture '$arch' is missing from the built" >&2
+            echo "    binary (it only contains: $ACTUAL_ARCHES)." >&2
+            echo "    This usually means a dependency doesn't have an '$arch' slice, so" >&2
+            echo "    the linker silently dropped it with a warning instead of failing" >&2
+            echo "    outright. The app will likely crash on launch on that architecture." >&2
+            echo "" >&2
+        fi
+    done
+fi
 
 # --- 4. Copy Qt frameworks and plugins into the bundle ----------------------
 echo "==> Copying Qt frameworks..."

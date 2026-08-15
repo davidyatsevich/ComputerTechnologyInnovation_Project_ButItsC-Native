@@ -1,19 +1,27 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Build for the host architecture by default on macOS. Universal (Intel +
-# Apple Silicon) builds are possible via -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64",
-# but are NOT the default here because it requires every linked dependency to
-# also be universal. Qt's official installer is. Homebrew's OpenCV is NOT
-# (Homebrew only builds single-arch, matching whatever Mac it was installed
-# on) - attempting a universal build with a single-arch OpenCV causes the
-# linker to silently drop OpenCV from the non-matching slice (a *warning*,
-# not an error), producing a binary that reports a successful build but
-# crashes on launch on the architecture that got dropped. It has also been
-# observed to make `otool -L` require otool-classic (for parsing the
-# resulting fat binary), which newer Xcode releases no longer ship.
+# Build universal (Intel + Apple Silicon) binaries on macOS by default.
+# Both remaining dependencies support this cleanly: Eigen is header-only (no
+# compiled binary, so architecture is a non-issue), and Qt's official
+# installer already ships universal frameworks. This was previously
+# restricted to host-arch-only because Homebrew's OpenCV was single-arch and
+# silently broke universal builds - that's no longer a concern since this
+# project doesn't use OpenCV at all. Override with
+# -DCMAKE_OSX_ARCHITECTURES=arm64 (or =x86_64) for a single-arch build.
 if(APPLE AND NOT CMAKE_OSX_ARCHITECTURES)
-    execute_process(COMMAND uname -m OUTPUT_VARIABLE HOST_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set(CMAKE_OSX_ARCHITECTURES "${HOST_ARCH}" CACHE STRING "Build architectures for macOS" FORCE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Build architectures for macOS" FORCE)
+endif()
+
+# Set a minimum supported macOS version explicitly. Without this, CMake
+# defaults to whatever the build machine's SDK implies (often quite recent),
+# which can produce a binary that builds fine as x86_64 but refuses to launch
+# on an older Intel Mac that hasn't been updated to a newer macOS release.
+# Apple ended Intel Mac support as of macOS 27 (2026) - macOS 26 (Tahoe) was
+# the last Intel-compatible release - so 12.0 comfortably covers the
+# remaining supported Intel Mac population without dropping very old,
+# already-unsupported hardware.
+if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS version" FORCE)
 endif()
 
 project(MyProject)

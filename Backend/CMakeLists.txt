@@ -1,11 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Build for the host architecture by default on macOS when configured
-# standalone. See the top-level CMakeLists.txt for why this isn't universal
-# by default (Homebrew's OpenCV is single-arch only).
+# Build universal (Intel + Apple Silicon) binaries on macOS by default when
+# configured standalone. See the top-level CMakeLists.txt for the full
+# rationale - the short version is that Eigen (header-only) and Qt's
+# official installer both support this cleanly now that OpenCV is no longer
+# a dependency.
 if(APPLE AND NOT CMAKE_OSX_ARCHITECTURES)
-    execute_process(COMMAND uname -m OUTPUT_VARIABLE HOST_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set(CMAKE_OSX_ARCHITECTURES "${HOST_ARCH}" CACHE STRING "Build architectures for macOS" FORCE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Build architectures for macOS" FORCE)
+endif()
+
+# See the top-level CMakeLists.txt for why this is set explicitly.
+if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS version" FORCE)
 endif()
 
 project(EmailClusteringBackend)
