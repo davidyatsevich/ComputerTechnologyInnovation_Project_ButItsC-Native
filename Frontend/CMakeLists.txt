@@ -69,3 +69,11 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Concurrent
     pipeline
 )
+
+# Unit tests (QtTest-based). Reuses the Qt Widgets/Charts modules already
+# found above. Disable with -DBUILD_TESTING=OFF if needed.
+option(BUILD_TESTING "Build unit tests" ON)
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(utest)
+endif()

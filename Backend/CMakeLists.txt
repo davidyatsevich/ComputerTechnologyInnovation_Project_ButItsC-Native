@@ -45,3 +45,12 @@ target_link_libraries(pipeline
 
 add_executable(email_clustering_backend src/main.cpp)
 target_link_libraries(email_clustering_backend pipeline)
+
+# Unit tests (QtTest-based). Only needs Qt's Test module, not the GUI
+# modules the Frontend needs. Disable with -DBUILD_TESTING=OFF if Qt isn't
+# available in a given build environment.
+option(BUILD_TESTING "Build unit tests" ON)
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(utest)
+endif()
