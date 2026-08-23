@@ -26,6 +26,8 @@ endif()
 
 project(MyProject)
 
+enable_testing()
+
 # Default to a Release build if the user didn't specify one (see Backend/CMakeLists.txt
 # for why this matters - unoptimized Eigen math is dramatically slower).
 if(NOT CMAKE_BUILD_TYPE)
